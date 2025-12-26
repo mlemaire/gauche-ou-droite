@@ -38,6 +38,31 @@ export default function GameContainer() {
   }, []);
 
   useEffect(() => {
+    if (isFinished) {
+      const sendResults = async () => {
+        if (results.length === 0) return;
+
+        try {
+          const response = await fetch("/api/scores", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ votes: results }),
+            cache: "no-store",
+          });
+          const newScores = await response.json();
+          setScores(newScores);
+        } catch (error) {
+          console.error("Failed to send results:", error);
+        }
+      };
+
+      sendResults();
+    }
+  }, [isFinished, results]);
+
+  useEffect(() => {
     console.log("scores", scores);
   }, [scores]);
 
@@ -57,20 +82,6 @@ export default function GameContainer() {
 
       const currentItem = items[currentIndex];
       setResults((prev) => [...prev, { item: currentItem, choice: dir }]);
-
-      fetch("/api/scores", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ itemId: items[currentIndex], choice: dir }),
-        cache: "no-store",
-      })
-        .then((res) => res.json())
-        .then((newScores) => {
-          console.log("new scores", newScores);
-          setScores(newScores);
-        });
 
       setTimeout(() => {
         setIsExit(false);
@@ -293,12 +304,18 @@ export default function GameContainer() {
         </div>
       </div>
       <div className="controls">
-        <button className="btn-left btn" onClick={() => vote("left")}>
+        <p className="text-gray-500 text-xs text-center">
+          Ce site est un jeu humoristique et absurde. Toute ressemblance avec
+          une analyse politique serait purement fortuite : aucun jugement,
+          aucune prise de position, aucun mouvement politique n’est représenté
+          ici.
+        </p>
+        {/* <button className="btn-left btn" onClick={() => vote("left")}>
           <i className="fa-arrow-left fas"></i>
         </button>
         <button className="btn-right btn" onClick={() => vote("right")}>
           <i className="fa-arrow-right fas"></i>
-        </button>
+        </button> */}
       </div>
     </div>
   );
