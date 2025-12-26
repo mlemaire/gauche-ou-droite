@@ -68,6 +68,7 @@ export default function GameContainer() {
       })
         .then((res) => res.json())
         .then((newScores) => {
+          console.log("new scores", newScores);
           setScores(newScores);
         });
 

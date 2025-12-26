@@ -105,10 +105,82 @@
   },
   "Une partie de bowling": {
     "left": 0,
-    "right": 0
+    "right": 1
   },
   "Un potager": {
     "left": 0,
-    "right": 0
+    "right": 1
+  },
+  "Un apéro visio": {
+    "left": 0,
+    "right": 2
+  },
+  "Le dernier livre de Zemmour": {
+    "left": 0,
+    "right": 2
+  },
+  "Un escape game": {
+    "left": 0,
+    "right": 2
+  },
+  "Une partie de pétanque": {
+    "left": 0,
+    "right": 2
+  },
+  "Un col roulé noir": {
+    "left": 0,
+    "right": 2
+  },
+  "Un brunch le dimanche": {
+    "left": 0,
+    "right": 2
+  },
+  "Une partie de belote": {
+    "left": 0,
+    "right": 2
+  },
+  "Un concert de Jul": {
+    "left": 0,
+    "right": 2
+  },
+  "Une chemise à carreaux": {
+    "left": 0,
+    "right": 2
+  },
+  "Le 1er mai à la campagne": {
+    "left": 0,
+    "right": 2
+  },
+  "Un pin's 'I love NY'": {
+    "left": 0,
+    "right": 2
+  },
+  "Un match de foot au stade": {
+    "left": 0,
+    "right": 2
+  },
+  "Un festival de musique électro": {
+    "left": 0,
+    "right": 2
+  },
+  "Une partie de chasse": {
+    "left": 0,
+    "right": 2
+  },
+  "Un meeting de Jean-Luc Mélenchon": {
+    "left": 0,
+    "right": 2
+  },
+  "Un pèlerinage à Lourdes": {
+    "left": 0,
+    "right": 2
+  },
+  "Un verre de vin rouge": {
+    "left": 0,
+    "right": 2
+  },
+  "Une soirée BDE": {
+    "left": 0,
+    "right": 2
   }
 }
