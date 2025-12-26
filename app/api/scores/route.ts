@@ -1,23 +1,24 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { getStore } from "@netlify/blobs";
 
 export const dynamic = "force-dynamic";
 
-const scoresFilePath = path.join(process.cwd(), "data", "scores.json");
+const storeName = "scores";
 
 async function getScores() {
+  const store = getStore(storeName);
   try {
-    const data = fs.readFileSync(scoresFilePath, "utf-8");
-    return JSON.parse(data);
+    const scores = await store.get("all", { type: "json" });
+    return scores || {};
   } catch (error) {
+    console.error("Error fetching scores:", error);
     return {};
   }
 }
 
 async function saveScores(scores: any) {
-  console.log("write  scores", scores);
-  fs.writeFileSync(scoresFilePath, JSON.stringify(scores, null, 2));
+  const store = getStore(storeName);
+  await store.setJSON("all", scores);
 }
 
 export async function GET() {
@@ -30,8 +31,7 @@ export async function POST(request: Request) {
   const scores = await getScores();
 
   if (!scores[itemId]) {
-    scores[itemId] =
-      choice === "left" ? { left: 1, right: 0 } : { left: 0, right: 1 };
+    scores[itemId] = { left: 0, right: 0 };
   }
 
   if (choice === "left") {
