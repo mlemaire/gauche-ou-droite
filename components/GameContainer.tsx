@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { database, getDailyWords } from "@/data/items";
 import { translations, TranslationKeys } from "@/lib/translations";
+import Link from "next/link";
 
 type Scores = {
   [key: string]: {
@@ -41,6 +42,9 @@ export default function GameContainer() {
     if (isFinished) {
       const sendResults = async () => {
         if (results.length === 0) return;
+
+        // Store votes in localStorage
+        localStorage.setItem("daily-votes", JSON.stringify(results));
 
         try {
           const response = await fetch("/api/scores", {
@@ -303,13 +307,19 @@ export default function GameContainer() {
           )}
         </div>
       </div>
-      <div className="controls">
-        <p className="text-gray-500 text-xs text-center">
+      <div className="flex-col gap-2 controls">
+        <p className="text-gray-500 text-center">
           Ce site est un jeu humoristique et absurde. Toute ressemblance avec
           une analyse politique serait purement fortuite : aucun jugement,
           aucune prise de position, aucun mouvement politique n’est représenté
           ici.
         </p>
+        <Link
+          href="/result"
+          className="inline-block mt-2 font-bold hover:underline"
+        >
+          Voir les scores du jour
+        </Link>
         {/* <button className="btn-left btn" onClick={() => vote("left")}>
           <i className="fa-arrow-left fas"></i>
         </button>
