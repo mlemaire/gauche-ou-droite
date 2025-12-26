@@ -31,7 +31,8 @@ export async function POST(request: Request) {
   const scores = await getScores();
 
   if (!scores[itemId]) {
-    scores[itemId] = { left: 0, right: 0 };
+    scores[itemId] =
+      choice === "left" ? { left: 1, right: 0 } : { left: 0, right: 1 };
   }
 
   if (choice === "left") {
