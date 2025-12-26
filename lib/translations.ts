@@ -10,3 +10,5 @@ export const translations = {
     or: "or",
   },
 };
+
+export type TranslationKeys = keyof typeof translations.fr;

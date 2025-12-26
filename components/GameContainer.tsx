@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { database, getDailyWords } from "@/data/items";
-import Hammer from "hammerjs";
-import { translations } from "@/lib/translations";
+import { translations, TranslationKeys } from "@/lib/translations";
 
 type Scores = {
   [key: string]: {
@@ -12,15 +11,15 @@ type Scores = {
   };
 };
 
-const lang = "fr";
+const lang: keyof typeof translations = "fr";
 const totalWordsPerDay = 20;
 
 export default function GameContainer() {
   const [items] = useState<string[]>(() => getDailyWords(database));
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [results, setResults] = useState<{ item: string; choice: string }[]>(
-    []
-  );
+  const [results, setResults] = useState<
+    { item: string; choice: "left" | "right" }[]
+  >([]);
   const [isFinished, setIsFinished] = useState(false);
   const [isExit, setIsExit] = useState(false);
   const [exitDir, setExitDir] = useState<"left" | "right" | null>(null);
@@ -105,47 +104,56 @@ export default function GameContainer() {
 
   useEffect(() => {
     if (cardRef.current && !isExit) {
-      const mc = new Hammer(cardRef.current);
+      let mc: HammerManager;
 
-      mc.on("pan", (e: HammerInput) => {
-        const x = e.deltaX;
-        const rotation = x / 15;
-        if (cardRef.current) {
-          cardRef.current.style.transition = "none";
-          cardRef.current.style.transform = `translateX(${x}px) rotate(${rotation}deg)`;
+      import("hammerjs").then((Hammer) => {
+        if (!cardRef.current) return;
+        mc = new Hammer.default(cardRef.current);
 
-          const stampG = cardRef.current.querySelector(
-            ".stamp.left"
-          ) as HTMLElement;
-          const stampD = cardRef.current.querySelector(
-            ".stamp.right"
-          ) as HTMLElement;
-          if (stampG)
-            stampG.style.opacity =
-              x < -50 ? Math.min(Math.abs(x) / 150, 1).toString() : "0";
-          if (stampD)
-            stampD.style.opacity =
-              x > 50 ? Math.min(x / 150, 1).toString() : "0";
-        }
+        mc.on("pan", (e: HammerInput) => {
+          const x = e.deltaX;
+          const rotation = x / 15;
+          if (cardRef.current) {
+            cardRef.current.style.transition = "none";
+            cardRef.current.style.transform = `translateX(${x}px) rotate(${rotation}deg)`;
+
+            const stampG = cardRef.current.querySelector(
+              ".stamp.left"
+            ) as HTMLElement;
+            const stampD = cardRef.current.querySelector(
+              ".stamp.right"
+            ) as HTMLElement;
+            if (stampG)
+              stampG.style.opacity =
+                x < -50 ? Math.min(Math.abs(x) / 150, 1).toString() : "0";
+            if (stampD)
+              stampD.style.opacity =
+                x > 50 ? Math.min(x / 150, 1).toString() : "0";
+          }
+        });
+
+        mc.on("panend", (e: HammerInput) => {
+          if (e.deltaX > 120) animateExit("right");
+          else if (e.deltaX < -120) animateExit("left");
+          else if (cardRef.current) {
+            cardRef.current.style.transition = "transform 0.3s ease";
+            cardRef.current.style.transform = "";
+            const stamps = cardRef.current.querySelectorAll(
+              ".stamp"
+            ) as NodeListOf<HTMLElement>;
+            stamps.forEach((s) => (s.style.opacity = "0"));
+          }
+        });
+
+        mc.on("swiperight", () => animateExit("right"));
+        mc.on("swipeleft", () => animateExit("left"));
       });
 
-      mc.on("panend", (e: HammerInput) => {
-        if (e.deltaX > 120) animateExit("right");
-        else if (e.deltaX < -120) animateExit("left");
-        else if (cardRef.current) {
-          cardRef.current.style.transition = "transform 0.3s ease";
-          cardRef.current.style.transform = "";
-          const stamps = cardRef.current.querySelectorAll(
-            ".stamp"
-          ) as NodeListOf<HTMLElement>;
-          stamps.forEach((s) => (s.style.opacity = "0"));
+      return () => {
+        if (mc) {
+          mc.destroy();
         }
-      });
-
-      mc.on("swiperight", () => animateExit("right"));
-      mc.on("swipeleft", () => animateExit("left"));
-
-      return () => mc.destroy();
+      };
     }
   }, [animateExit, isExit]);
 
@@ -167,7 +175,7 @@ export default function GameContainer() {
               const rightPercentage = 100 - leftPercentage;
 
               const userChoiceText = translations[lang][result.choice];
-              const majorityChoice =
+              const majorityChoice: "left" | "right" =
                 leftPercentage > rightPercentage ? "left" : "right";
               const majorityPercentage = Math.max(
                 leftPercentage,
@@ -238,7 +246,7 @@ export default function GameContainer() {
       <header>
         <h1 className="font-black text-2xl">
           <span className="g-txt">{translations[lang].left}</span>{" "}
-          {translations[lang].or}{" "}
+          {translations[lang].or as TranslationKeys}{" "}
           <span className="d-txt">{translations[lang].right}</span> ?
         </h1>
         <div id="counter" className="pb-4 font-bold text-gray-500">
