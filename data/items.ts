@@ -49,4 +49,63 @@ export const database = [
   "Un stage de yoga",
   "Une cheminée",
   "Un compte Netflix",
+  "Une choucroute",
+  "Un poulet le dimanche",
+  "Une bouteille de champagne",
+  "Un sac à dos",
+  "Une salopette",
+  "Une blanquette",
+  "Une partie de bowling",
+  "Un potager",
+  "Un apéro visio",
+  "Le dernier livre de Zemmour",
+  "Un escape game",
+  "Une partie de pétanque",
+  "Un col roulé noir",
+  "Un brunch le dimanche",
+  "Une partie de belote",
+  "Un concert de Jul",
+  "Une chemise à carreaux",
+  "Le 1er mai à la campagne",
+  "Un pin's 'I love NY'",
+  "Un match de foot au stade",
+  "Un festival de musique électro",
+  "Une partie de chasse",
+  "Un meeting de Jean-Luc Mélenchon",
+  "Un pèlerinage à Lourdes",
+  "Un verre de vin rouge",
+  "Une soirée BDE",
+  "Un club de golf",
+  "Une rave party",
+  "Un cours de crossfit",
+  "Un débat sur CNews",
+  "Un atelier poterie",
+  "Une partie de Warhammer 40k",
+  "Un concert de Michel Sardou",
+  "Un fan de tuning",
+  "Un végan",
+  "Un bob Cochonou",
+  "Une raclette",
+  "Un karaoké",
+  "Un afterwork",
+  "Un cours de salsa",
+  "Un tatouage tribal",
+  "Un food truck",
+  "Un baby-foot au bureau",
+  "Un smoothie",
+  "Un rallye automobile",
+  "Un cours de méditation",
 ];
+
+export function getDailyWords(db: string[]) {
+  const wordsPerPage = 20;
+  const startDate = new Date("2025-01-01").getTime();
+  const today = new Date().setHours(0, 0, 0, 0);
+
+  const diffInDays = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+
+  // Le modulo permet de recommencer au début de la liste une fois les mots épuisés
+  const startIndex = (diffInDays * wordsPerPage) % db.length;
+
+  return db.slice(startIndex, startIndex + wordsPerPage);
+}

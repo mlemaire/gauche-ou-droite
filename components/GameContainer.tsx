@@ -1,24 +1,46 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { database } from "@/data/items";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { database, getDailyWords } from "@/data/items";
+import Hammer from "hammerjs";
+import { translations } from "@/lib/translations";
+
+type Scores = {
+  [key: string]: {
+    left: number;
+    right: number;
+  };
+};
+
+const lang = "fr";
+const totalWordsPerDay = 20;
 
 export default function GameContainer() {
-  const [items, setItems] = useState<string[]>([]);
+  const [items] = useState<string[]>(() => getDailyWords(database));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<{ item: string; choice: string }[]>(
     []
   );
   const [isFinished, setIsFinished] = useState(false);
   const [isExit, setIsExit] = useState(false);
-  const [exitDir, setExitDir] = useState<"gauche" | "droite" | null>(null);
+  const [exitDir, setExitDir] = useState<"left" | "right" | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [scores, setScores] = useState<Scores>({});
 
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setItems([...database].sort(() => Math.random() - 0.5));
+    const fetchScores = async () => {
+      const response = await fetch("/api/scores", { cache: "no-store" });
+      const data = await response.json();
+      setScores(data);
+    };
+    fetchScores();
   }, []);
+
+  useEffect(() => {
+    console.log("scores", scores);
+  }, [scores]);
 
   useEffect(() => {
     if (items.length > 0 && !isFinished) {
@@ -27,44 +49,65 @@ export default function GameContainer() {
     }
   }, [currentIndex, items, isFinished]);
 
-  const animateExit = (dir: "gauche" | "droite") => {
-    setIsExit(true);
-    setExitDir(dir);
+  const animateExit = useCallback(
+    (dir: "left" | "right") => {
+      console.log("exit", dir);
+      if (isExit) return;
+      setIsExit(true);
+      setExitDir(dir);
 
-    setResults((prev) => [...prev, { item: items[currentIndex], choice: dir }]);
+      const currentItem = items[currentIndex];
+      setResults((prev) => [...prev, { item: currentItem, choice: dir }]);
 
-    setTimeout(() => {
-      setIsExit(false);
-      setExitDir(null);
-      setIsVisible(false);
-      if (currentIndex >= 49) {
-        setIsFinished(true);
-      } else {
-        setCurrentIndex((prev) => prev + 1);
-      }
-    }, 300);
-  };
+      fetch("/api/scores", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ itemId: items[currentIndex], choice: dir }),
+        cache: "no-store",
+      })
+        .then((res) => res.json())
+        .then((newScores) => {
+          setScores(newScores);
+        });
 
-  const vote = (dir: "gauche" | "droite") => {
-    if (isExit || isFinished) return;
-    animateExit(dir);
-  };
+      setTimeout(() => {
+        setIsExit(false);
+        setExitDir(null);
+        setIsVisible(false);
+        if (currentIndex >= totalWordsPerDay - 1) {
+          setIsFinished(true);
+        } else {
+          setCurrentIndex((prev) => prev + 1);
+        }
+      }, 300);
+    },
+    [currentIndex, isExit, items, setResults]
+  );
+
+  const vote = useCallback(
+    (dir: "left" | "right") => {
+      if (isExit || isFinished) return;
+      animateExit(dir);
+    },
+    [animateExit, isExit, isFinished]
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") vote("gauche");
-      if (e.key === "ArrowRight") vote("droite");
+      if (e.key === "ArrowLeft") vote("left");
+      if (e.key === "ArrowRight") vote("right");
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIndex, isExit, items]);
+  }, [vote]);
 
   useEffect(() => {
     if (cardRef.current && !isExit) {
-      const Hammer = require("hammerjs");
       const mc = new Hammer(cardRef.current);
 
-      mc.on("pan", (e: any) => {
+      mc.on("pan", (e: HammerInput) => {
         const x = e.deltaX;
         const rotation = x / 15;
         if (cardRef.current) {
@@ -72,10 +115,10 @@ export default function GameContainer() {
           cardRef.current.style.transform = `translateX(${x}px) rotate(${rotation}deg)`;
 
           const stampG = cardRef.current.querySelector(
-            ".stamp.gauche"
+            ".stamp.left"
           ) as HTMLElement;
           const stampD = cardRef.current.querySelector(
-            ".stamp.droite"
+            ".stamp.right"
           ) as HTMLElement;
           if (stampG)
             stampG.style.opacity =
@@ -86,9 +129,9 @@ export default function GameContainer() {
         }
       });
 
-      mc.on("panend", (e: any) => {
-        if (e.deltaX > 120) animateExit("droite");
-        else if (e.deltaX < -120) animateExit("gauche");
+      mc.on("panend", (e: HammerInput) => {
+        if (e.deltaX > 120) animateExit("right");
+        else if (e.deltaX < -120) animateExit("left");
         else if (cardRef.current) {
           cardRef.current.style.transition = "transform 0.3s ease";
           cardRef.current.style.transform = "";
@@ -99,21 +142,107 @@ export default function GameContainer() {
         }
       });
 
+      mc.on("swiperight", () => animateExit("right"));
+      mc.on("swipeleft", () => animateExit("left"));
+
       return () => mc.destroy();
     }
-  }, [currentIndex, items, isExit]);
+  }, [animateExit, isExit]);
 
-  if (isFinished) return <ResultsView results={results} />;
+  if (isFinished) {
+    return (
+      <div className="game-wrapper">
+        <header>
+          <h1 className="font-black text-2xl">Résultats</h1>
+        </header>
+        <div className="results-container">
+          <ul className="space-y-4">
+            {results.map((result, index) => {
+              const itemScores = scores[result.item] || { left: 0, right: 0 };
+              const totalVotes = itemScores.left + itemScores.right;
+              const leftPercentage =
+                totalVotes > 0
+                  ? Math.round((itemScores.left / totalVotes) * 100)
+                  : 50;
+              const rightPercentage = 100 - leftPercentage;
+
+              const userChoiceText = translations[lang][result.choice];
+              const majorityChoice =
+                leftPercentage > rightPercentage ? "left" : "right";
+              const majorityPercentage = Math.max(
+                leftPercentage,
+                rightPercentage
+              );
+              const majorityChoiceText = translations[lang][majorityChoice];
+
+              return (
+                <li key={index} className="card">
+                  <div className="w-full">
+                    <p className="mb-2 font-bold text-xl">{result.item}</p>
+                    <p className="mb-3 text-gray-600 text-sm">
+                      Vous avez voté{" "}
+                      <span
+                        className={`font-bold ${
+                          result.choice === "left" ? "g-txt" : "d-txt"
+                        }`}
+                      >
+                        {userChoiceText}
+                      </span>
+                      ,{" "}
+                      {result.choice !== majorityChoice
+                        ? "cependant"
+                        : "et comme vous,"}{" "}
+                      <span
+                        className={`font-bold ${
+                          majorityChoice === "left" ? "g-txt" : "d-txt"
+                        }`}
+                      >
+                        {majorityPercentage}%
+                      </span>{" "}
+                      des gens ont voté {majorityChoiceText}.
+                    </p>
+                    <div className="flex bg-gray-200 rounded-full h-8 overflow-hidden font-bold text-white text-sm">
+                      <div
+                        className="bg-[var(--left-color)] flex justify-center items-center"
+                        style={{ width: `${leftPercentage}%` }}
+                      >
+                        {leftPercentage}%
+                      </div>
+                      <div
+                        className="bg-[var(--right-color)] flex justify-center items-center"
+                        style={{ width: `${rightPercentage}%` }}
+                      >
+                        {rightPercentage}%
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        <div className="controls">
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-left btn"
+          >
+            <i className="fa-arrow-rotate-left fa-solid"></i>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="game-wrapper">
       <header>
-        <h1 className="font-black">
-          <span className="g-txt">Gauche</span> ou{" "}
-          <span className="d-txt">Droite</span> ?
+        <h1 className="font-black text-2xl">
+          <span className="g-txt">{translations[lang].left}</span>{" "}
+          {translations[lang].or}{" "}
+          <span className="d-txt">{translations[lang].right}</span> ?
         </h1>
-        <div id="counter" className="font-bold text-gray-500">
-          {currentIndex + 1} / 50
+        <div id="counter" className="pb-4 font-bold text-gray-500">
+          {currentIndex + 1} / {totalWordsPerDay}
         </div>
       </header>
       <div id="app-container">
@@ -121,31 +250,31 @@ export default function GameContainer() {
           {items.length > 0 && (
             <div
               ref={cardRef}
-              className={`card ${isVisible ? "visible" : ""} ${
+              className={`card card-game ${isVisible ? "visible" : ""} ${
                 isExit ? "exit" : ""
               }`}
               style={
                 isExit
                   ? {
                       transform: `translateX(${
-                        exitDir === "droite" ? 1000 : -1000
-                      }px) rotate(${exitDir === "droite" ? 45 : -45}deg)`,
+                        exitDir === "right" ? 1000 : -1000
+                      }px) rotate(${exitDir === "right" ? 45 : -45}deg)`,
                       opacity: 0,
                     }
                   : {}
               }
             >
               <div
-                className="stamp gauche"
-                style={{ opacity: exitDir === "gauche" ? 1 : 0 }}
+                className="left stamp"
+                style={{ opacity: exitDir === "left" ? 1 : 0 }}
               >
-                GAUCHE
+                {translations[lang].left}
               </div>
               <div
-                className="stamp droite"
-                style={{ opacity: exitDir === "droite" ? 1 : 0 }}
+                className="right stamp"
+                style={{ opacity: exitDir === "right" ? 1 : 0 }}
               >
-                DROITE
+                {translations[lang].right}
               </div>
               <h2 className="font-bold text-gray-800 text-2xl select-none">
                 {items[currentIndex]}
@@ -155,63 +284,13 @@ export default function GameContainer() {
         </div>
       </div>
       <div className="controls">
-        <button className="btn btn-g" onClick={() => vote("gauche")}>
+        <button className="btn-left btn" onClick={() => vote("left")}>
           <i className="fa-arrow-left fas"></i>
         </button>
-        <button className="btn btn-d" onClick={() => vote("droite")}>
+        <button className="btn-right btn" onClick={() => vote("right")}>
           <i className="fa-arrow-right fas"></i>
         </button>
       </div>
-    </div>
-  );
-}
-
-function ResultsView({ results }: { results: any[] }) {
-  const dCount = results.filter((r) => r.choice === "droite").length;
-  return (
-    <div id="results" style={{ display: "block" }}>
-      <div className="stat-banner">
-        <h2>Verdict</h2>
-        <p style={{ fontSize: "1.2rem", marginTop: "10px" }}>
-          Vous êtes à{" "}
-          <span className="d-txt">{(dCount / 50) * 100}% de Droite</span> et{" "}
-          <span className="g-txt">{100 - (dCount / 50) * 100}% de Gauche</span>.
-        </p>
-      </div>
-      <div id="res-list">
-        {results.map((r, i) => (
-          <div key={i} className="res-row">
-            <span style={{ fontWeight: 600 }}>{r.item}</span>
-            <span
-              className="badge"
-              style={{
-                background:
-                  r.choice === "droite"
-                    ? "var(--droite-color)"
-                    : "var(--gauche-color)",
-              }}
-            >
-              {r.choice.toUpperCase()}
-            </span>
-          </div>
-        ))}
-      </div>
-      <button
-        onClick={() => window.location.reload()}
-        style={{
-          width: "100%",
-          padding: "15px",
-          marginTop: "20px",
-          background: "#333",
-          color: "white",
-          border: "none",
-          borderRadius: "12px",
-          cursor: "pointer",
-          fontWeight: "bold",
-        }}
-      >
-        REJOUER
-      </button>
     </div>
   );
 }
