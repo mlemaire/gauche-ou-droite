@@ -148,6 +148,8 @@ export const database = [
   "Un cours de yoga bikram",
   "Une partie de bridge",
   "Un concert de Tryo",
+  "Un croque-monsieur",
+  "Un paintball",
   "Un salon de l'agriculture",
   "Un club de cigares",
   "Un cours de langue des signes",
@@ -186,5 +188,31 @@ export function getDailyWords(db: string[], totalWords = 20) {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
 
-  return shuffled.slice(0, totalWords);
+  // Filter out invalid words
+  const isValid = (item: string | undefined | null) =>
+    typeof item === "string" && item.trim().length > 0;
+
+  // Select 20 valid words by picking from the shuffled list
+  const validWords: string[] = [];
+  let idx = 0;
+  while (validWords.length < totalWords && idx < shuffled.length) {
+    if (isValid(shuffled[idx])) {
+      validWords.push(shuffled[idx]!);
+    }
+    idx++;
+  }
+
+  // If there are not enough valid words, fill the gap with random valid words (rare)
+  if (validWords.length < totalWords) {
+    const fallback = db.filter(isValid);
+    while (validWords.length < totalWords && fallback.length > 0) {
+      // Avoid duplicates
+      const candidate = fallback[Math.floor(Math.random() * fallback.length)];
+      if (!validWords.includes(candidate)) {
+        validWords.push(candidate);
+      }
+    }
+  }
+
+  return validWords;
 }

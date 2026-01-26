@@ -98,7 +98,7 @@ export default function GameContainer() {
         }
       }, 300);
     },
-    [currentIndex, isExit, items, setResults]
+    [currentIndex, isExit, items, setResults],
   );
 
   const vote = useCallback(
@@ -106,7 +106,7 @@ export default function GameContainer() {
       if (isExit || isFinished) return;
       animateExit(dir);
     },
-    [animateExit, isExit, isFinished]
+    [animateExit, isExit, isFinished],
   );
 
   useEffect(() => {
@@ -134,10 +134,10 @@ export default function GameContainer() {
             cardRef.current.style.transform = `translateX(${x}px) rotate(${rotation}deg)`;
 
             const stampG = cardRef.current.querySelector(
-              ".stamp.left"
+              ".stamp.left",
             ) as HTMLElement;
             const stampD = cardRef.current.querySelector(
-              ".stamp.right"
+              ".stamp.right",
             ) as HTMLElement;
             if (stampG)
               stampG.style.opacity =
@@ -155,7 +155,7 @@ export default function GameContainer() {
             cardRef.current.style.transition = "transform 0.3s ease";
             cardRef.current.style.transform = "";
             const stamps = cardRef.current.querySelectorAll(
-              ".stamp"
+              ".stamp",
             ) as NodeListOf<HTMLElement>;
             stamps.forEach((s) => (s.style.opacity = "0"));
           }
@@ -195,7 +195,7 @@ export default function GameContainer() {
                 leftPercentage > rightPercentage ? "left" : "right";
               const majorityPercentage = Math.max(
                 leftPercentage,
-                rightPercentage
+                rightPercentage,
               );
               const majorityChoiceText = translations[lang][majorityChoice];
 
@@ -314,18 +314,23 @@ export default function GameContainer() {
           aucune prise de position, aucun mouvement politique n’est représenté
           ici.
         </p>
-        <Link
-          href="/result"
-          className="inline-block mt-2 font-bold hover:underline"
-        >
-          Voir les scores du jour
-        </Link>
-        {/* <button className="btn-left btn" onClick={() => vote("left")}>
-          <i className="fa-arrow-left fas"></i>
-        </button>
-        <button className="btn-right btn" onClick={() => vote("right")}>
-          <i className="fa-arrow-right fas"></i>
-        </button> */}
+        <div className="flex items-center gap-4">
+          <Link
+            href="/result"
+            className="inline-block flex items-center bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg h-10 font-bold text-gray-600 text-sm"
+          >
+            Voir les scores du jour
+          </Link>
+          <a href="https://www.buymeacoffee.com/m_platypus" target="_blank">
+            <img
+              src="https://cdn.buymeacoffee.com/buttons/v2/default-red.png"
+              alt="Buy Me A Coffee"
+              height={40}
+              width={147}
+              style={{ height: "40px !important", width: "147px !important" }}
+            />
+          </a>
+        </div>
       </div>
     </div>
   );
