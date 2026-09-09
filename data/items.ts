@@ -160,59 +160,64 @@ export const database = [
   "Un pot de départ à la retraite",
 ];
 
-export function getDailyWords(db: string[], totalWords = 20) {
-  const getSeedForToday = () => {
-    const today = new Date();
-    // Simple seed: YYYYMMDD
-    return (
-      today.getFullYear() * 10000 +
-      (today.getMonth() + 1) * 100 +
-      today.getDate()
-    );
-  };
+// Nombre de mots proposés chaque jour. Seule source de vérité : ne jamais
+// dupliquer cette valeur ailleurs, toujours dériver de `items.length`.
+export const WORDS_PER_DAY = 5;
 
-  const seed = getSeedForToday();
+// Jour à partir duquel la rotation des mots démarre (jour 0 de la rotation).
+const ROTATION_START = new Date(2026, 8, 9); // 9 septembre 2026
 
-  // Create a deterministic pseudo-random number generator based on the seed
+const isValidWord = (item: string | undefined | null): item is string =>
+  typeof item === "string" && item.trim().length > 0;
+
+// Mélange déterministe à seed fixe : le même tableau en entrée produit
+// toujours le même ordre, quel que soit le moment où le code s'exécute.
+function seededShuffle<T>(arr: T[], seed: number): T[] {
   const seededRandom = (iteration: number) => {
     const x = Math.sin(seed + iteration) * 10000;
     return x - Math.floor(x);
   };
 
-  // Create a copy of the array to shuffle
-  const shuffled = [...db];
-
-  // Fisher-Yates shuffle algorithm using our seeded random number generator
+  const shuffled = [...arr];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(seededRandom(i) * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
+  return shuffled;
+}
 
-  // Filter out invalid words
-  const isValid = (item: string | undefined | null) =>
-    typeof item === "string" && item.trim().length > 0;
+function daysSince(start: Date, date: Date) {
+  const startUTC = Date.UTC(
+    start.getFullYear(),
+    start.getMonth(),
+    start.getDate(),
+  );
+  const dateUTC = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.floor((dateUTC - startUTC) / 86400000);
+}
 
-  // Select 20 valid words by picking from the shuffled list
-  const validWords: string[] = [];
-  let idx = 0;
-  while (validWords.length < totalWords && idx < shuffled.length) {
-    if (isValid(shuffled[idx])) {
-      validWords.push(shuffled[idx]!);
-    }
-    idx++;
-  }
+/**
+ * Renvoie les mots du jour. Le tableau valide (dédupliqué des entrées
+ * vides) est mélangé une seule fois avec une seed fixe, puis chaque jour
+ * consomme une tranche différente de ce mélange : impossible d'avoir un
+ * doublon dans une même journée, et pas de répétition d'un jour à l'autre
+ * tant que la liste couvre la période (elle boucle ensuite).
+ */
+export function getDailyWords(
+  db: string[],
+  wordsPerDay = WORDS_PER_DAY,
+  forDate: Date = new Date(),
+) {
+  const validWords = db.filter(isValidWord);
+  if (validWords.length === 0) return [];
 
-  // If there are not enough valid words, fill the gap with random valid words (rare)
-  if (validWords.length < totalWords) {
-    const fallback = db.filter(isValid);
-    while (validWords.length < totalWords && fallback.length > 0) {
-      // Avoid duplicates
-      const candidate = fallback[Math.floor(Math.random() * fallback.length)];
-      if (!validWords.includes(candidate)) {
-        validWords.push(candidate);
-      }
-    }
-  }
+  const perDay = Math.min(wordsPerDay, validWords.length);
+  const pool = seededShuffle(validWords, 20250101);
 
-  return validWords;
+  const totalSlots = Math.floor(pool.length / perDay) || 1;
+  const dayIndex = Math.max(0, daysSince(ROTATION_START, forDate));
+  const cycleIndex = dayIndex % totalSlots;
+  const start = cycleIndex * perDay;
+
+  return pool.slice(start, start + perDay);
 }

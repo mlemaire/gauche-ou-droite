@@ -13,7 +13,6 @@ type Scores = {
 };
 
 const lang: keyof typeof translations = "fr";
-const totalWordsPerDay = 20;
 
 export default function GameContainer() {
   const [items] = useState<string[]>(() => getDailyWords(database));
@@ -91,7 +90,7 @@ export default function GameContainer() {
         setIsExit(false);
         setExitDir(null);
         setIsVisible(false);
-        if (currentIndex >= totalWordsPerDay - 1) {
+        if (currentIndex >= items.length - 1) {
           setIsFinished(true);
         } else {
           setCurrentIndex((prev) => prev + 1);
@@ -266,12 +265,12 @@ export default function GameContainer() {
           <span className="d-txt">{translations[lang].right}</span> ?
         </h1>
         <div id="counter" className="pb-4 font-bold text-gray-500">
-          {currentIndex + 1} / {totalWordsPerDay}
+          {currentIndex + 1} / {items.length}
         </div>
       </header>
       <div id="app-container">
         <div className="card-container">
-          {items.length > 0 && (
+          {currentIndex < items.length && (
             <div
               ref={cardRef}
               className={`card card-game ${isVisible ? "visible" : ""} ${
