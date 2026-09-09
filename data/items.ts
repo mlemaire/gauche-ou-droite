@@ -1893,7 +1893,7 @@ export const database = [
 export const WORDS_PER_DAY = 5;
 
 // Jour à partir duquel la rotation des mots démarre (jour 0 de la rotation).
-const ROTATION_START = new Date(2026, 8, 9); // 9 septembre 2026
+export const ROTATION_START = new Date(2026, 8, 9); // 9 septembre 2026
 
 const isValidWord = (item: string | undefined | null): item is string =>
   typeof item === "string" && item.trim().length > 0;
