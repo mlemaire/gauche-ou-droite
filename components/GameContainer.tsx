@@ -12,6 +12,7 @@ import {
 } from "@/lib/days";
 import { getStoredVotes, saveVotes, type Vote } from "@/lib/votesStorage";
 import Link from "next/link";
+import SupportFooter from "@/components/SupportFooter";
 
 type Scores = {
   [key: string]: {
@@ -291,18 +292,13 @@ export default function GameContainer() {
         <div className="flex-col gap-2 controls">
           <div className="flex items-center gap-4">
             <Link
-              href={`/result?date=${dayKey}`}
-              className="inline-block flex items-center bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg h-10 font-bold text-gray-600 text-sm"
-            >
-              Voir les scores du jour
-            </Link>
-            <Link
               href="/calendrier"
               className="inline-block flex items-center bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg h-10 font-bold text-gray-600 text-sm"
             >
               Rattraper d&apos;autres jours
             </Link>
           </div>
+          <SupportFooter />
         </div>
       </div>
     );
@@ -364,23 +360,7 @@ export default function GameContainer() {
         </div>
       </div>
       <div className="flex-col gap-2 controls">
-        <p className="text-gray-500 text-center">
-          Ce site est un jeu humoristique et absurde. Toute ressemblance avec
-          une analyse politique serait purement fortuite : aucun jugement,
-          aucune prise de position, aucun mouvement politique n’est représenté
-          ici.
-        </p>
-        <div className="flex items-center gap-4">
-          <a href="https://www.buymeacoffee.com/m_platypus" target="_blank">
-            <img
-              src="https://cdn.buymeacoffee.com/buttons/v2/default-red.png"
-              alt="Buy Me A Coffee"
-              height={40}
-              width={147}
-              style={{ height: "40px !important", width: "147px !important" }}
-            />
-          </a>
-        </div>
+        <SupportFooter />
       </div>
     </div>
   );
