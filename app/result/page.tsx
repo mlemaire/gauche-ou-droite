@@ -7,7 +7,6 @@ import { translations } from "@/lib/translations";
 import { todayKey, isPlayableDayKey, formatDayLabel } from "@/lib/days";
 import { getStoredVotes, type Vote } from "@/lib/votesStorage";
 
-// Define the types we'll use, consistent with GameContainer
 type Scores = {
   [key: string]: {
     left: number;

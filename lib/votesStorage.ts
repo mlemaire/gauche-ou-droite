@@ -2,7 +2,6 @@ export type Vote = { item: string; choice: "left" | "right" };
 
 const VOTES_PREFIX = "votes-";
 
-/** Votes déjà enregistrés pour ce jour, ou null si ce jour n'a pas encore été joué. */
 export function getStoredVotes(dayKey: string): Vote[] | null {
   if (typeof window === "undefined") return null;
   const raw = localStorage.getItem(VOTES_PREFIX + dayKey);

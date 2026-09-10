@@ -9,8 +9,6 @@ export default function CalendrierPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // localStorage n'existe pas côté serveur : on ne peut lire les jours
-    // déjà joués qu'une fois montés côté client.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);

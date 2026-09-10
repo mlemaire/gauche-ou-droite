@@ -1911,18 +1911,13 @@ export const database = [
   "Fumer la pipe le soir",
 ];
 
-// Nombre de mots proposés chaque jour. Seule source de vérité : ne jamais
-// dupliquer cette valeur ailleurs, toujours dériver de `items.length`.
 export const WORDS_PER_DAY = 5;
 
-// Jour à partir duquel la rotation des mots démarre (jour 0 de la rotation).
-export const ROTATION_START = new Date(2026, 8, 9); // 9 septembre 2026
+export const ROTATION_START = new Date(2026, 8, 9);
 
 const isValidWord = (item: string | undefined | null): item is string =>
   typeof item === "string" && item.trim().length > 0;
 
-// Mélange déterministe à seed fixe : le même tableau en entrée produit
-// toujours le même ordre, quel que soit le moment où le code s'exécute.
 function seededShuffle<T>(arr: T[], seed: number): T[] {
   const seededRandom = (iteration: number) => {
     const x = Math.sin(seed + iteration) * 10000;
@@ -1947,13 +1942,6 @@ function daysSince(start: Date, date: Date) {
   return Math.floor((dateUTC - startUTC) / 86400000);
 }
 
-/**
- * Renvoie les mots du jour. Le tableau valide (dédupliqué des entrées
- * vides) est mélangé une seule fois avec une seed fixe, puis chaque jour
- * consomme une tranche différente de ce mélange : impossible d'avoir un
- * doublon dans une même journée, et pas de répétition d'un jour à l'autre
- * tant que la liste couvre la période (elle boucle ensuite).
- */
 export function getDailyWords(
   db: string[],
   wordsPerDay = WORDS_PER_DAY,

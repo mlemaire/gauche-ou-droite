@@ -52,8 +52,6 @@ export default function GameContainer() {
 
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // À chaque changement de jour visé : le rejouer est interdit s'il est déjà
-  // enregistré, sinon on (re)démarre une partie fraîche pour ce jour-là.
   useEffect(() => {
     const existing = getStoredVotes(dayKey);
     if (existing) {

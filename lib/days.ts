@@ -22,7 +22,6 @@ export function todayKey(): string {
   return toDayKey(new Date());
 }
 
-/** Une date est jouable si elle est comprise entre le début de la rotation et aujourd'hui inclus. */
 export function isPlayableDayKey(key: string): boolean {
   const date = fromDayKey(key);
   if (Number.isNaN(date.getTime())) return false;
@@ -33,7 +32,6 @@ export function isPlayableDayKey(key: string): boolean {
   );
 }
 
-/** Liste des jours jouables du plus récent au plus ancien (aujourd'hui inclus). */
 export function listPlayableDayKeys(): string[] {
   const start = startOfDay(ROTATION_START).getTime();
   const end = startOfDay(new Date()).getTime();
