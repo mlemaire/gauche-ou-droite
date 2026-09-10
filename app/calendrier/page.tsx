@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listPlayableDayKeys, formatDayLabel, todayKey } from "@/lib/days";
 import { hasPlayed } from "@/lib/votesStorage";
+import SupportFooter from "@/components/SupportFooter";
 
 export default function CalendrierPage() {
   const [mounted, setMounted] = useState(false);
@@ -69,6 +70,9 @@ export default function CalendrierPage() {
         <Link href="/" className="btn-left btn">
           <i className="fa-solid fa-gamepad"></i>
         </Link>
+      </div>
+      <div className="flex-col gap-2 controls">
+        <SupportFooter />
       </div>
     </div>
   );
