@@ -49,6 +49,7 @@ export default function GameContainer() {
   const [isVisible, setIsVisible] = useState(false);
   const [scores, setScores] = useState<Scores>({});
   const justFinishedRef = useRef(false);
+  const isExitRef = useRef(false);
 
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -111,7 +112,8 @@ export default function GameContainer() {
 
   const animateExit = useCallback(
     (dir: "left" | "right") => {
-      if (isExit) return;
+      if (isExitRef.current) return;
+      isExitRef.current = true;
       setIsExit(true);
       setExitDir(dir);
 
@@ -120,6 +122,7 @@ export default function GameContainer() {
       setResults(updated);
 
       setTimeout(() => {
+        isExitRef.current = false;
         setIsExit(false);
         setExitDir(null);
         setIsVisible(false);
@@ -132,15 +135,15 @@ export default function GameContainer() {
         }
       }, 300);
     },
-    [currentIndex, isExit, items, results],
+    [currentIndex, items, results],
   );
 
   const vote = useCallback(
     (dir: "left" | "right") => {
-      if (isExit || phase !== "playing") return;
+      if (isExitRef.current || phase !== "playing") return;
       animateExit(dir);
     },
-    [animateExit, isExit, phase],
+    [animateExit, phase],
   );
 
   useEffect(() => {
