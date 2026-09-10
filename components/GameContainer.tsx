@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
-import { database, getDailyWords } from "@/data/items";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
+import { database, getDailyWords, WORDS_PER_DAY } from "@/data/items";
 import { translations, TranslationKeys } from "@/lib/translations";
+import {
+  fromDayKey,
+  isPlayableDayKey,
+  todayKey,
+  formatDayLabel,
+} from "@/lib/days";
+import { getStoredVotes, saveVotes, type Vote } from "@/lib/votesStorage";
 import Link from "next/link";
 
 type Scores = {
@@ -13,21 +21,48 @@ type Scores = {
 };
 
 const lang: keyof typeof translations = "fr";
-const totalWordsPerDay = 20;
 
 export default function GameContainer() {
-  const [items] = useState<string[]>(() => getDailyWords(database));
+  const searchParams = useSearchParams();
+  const requestedDate = searchParams.get("date");
+
+  const dayKey = useMemo(() => {
+    if (requestedDate && isPlayableDayKey(requestedDate)) return requestedDate;
+    return todayKey();
+  }, [requestedDate]);
+
+  const isToday = dayKey === todayKey();
+  const targetDate = useMemo(() => fromDayKey(dayKey), [dayKey]);
+  const items = useMemo(
+    () => getDailyWords(database, WORDS_PER_DAY, targetDate),
+    [targetDate],
+  );
+
+  const [phase, setPhase] = useState<"loading" | "playing" | "finished">(
+    "loading",
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [results, setResults] = useState<
-    { item: string; choice: "left" | "right" }[]
-  >([]);
-  const [isFinished, setIsFinished] = useState(false);
+  const [results, setResults] = useState<Vote[]>([]);
+  const [displayResults, setDisplayResults] = useState<Vote[]>([]);
   const [isExit, setIsExit] = useState(false);
   const [exitDir, setExitDir] = useState<"left" | "right" | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [scores, setScores] = useState<Scores>({});
+  const justFinishedRef = useRef(false);
 
   const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const existing = getStoredVotes(dayKey);
+    if (existing) {
+      setDisplayResults(existing);
+      setPhase("finished");
+    } else {
+      setResults([]);
+      setCurrentIndex(0);
+      setPhase("playing");
+    }
+  }, [dayKey]);
 
   useEffect(() => {
     const fetchScores = async () => {
@@ -39,12 +74,13 @@ export default function GameContainer() {
   }, []);
 
   useEffect(() => {
-    if (isFinished) {
-      const sendResults = async () => {
-        if (results.length === 0) return;
+    if (phase === "finished" && justFinishedRef.current) {
+      justFinishedRef.current = false;
 
-        // Store votes in localStorage
-        localStorage.setItem("daily-votes", JSON.stringify(results));
+      const sendResults = async () => {
+        if (displayResults.length === 0) return;
+
+        saveVotes(dayKey, displayResults);
 
         try {
           const response = await fetch("/api/scores", {
@@ -52,7 +88,7 @@ export default function GameContainer() {
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ votes: results }),
+            body: JSON.stringify({ votes: displayResults }),
             cache: "no-store",
           });
           const newScores = await response.json();
@@ -64,49 +100,47 @@ export default function GameContainer() {
 
       sendResults();
     }
-  }, [isFinished, results]);
+  }, [phase, displayResults, dayKey]);
 
   useEffect(() => {
-    console.log("scores", scores);
-  }, [scores]);
-
-  useEffect(() => {
-    if (items.length > 0 && !isFinished) {
+    if (phase === "playing" && items.length > 0) {
       const timer = setTimeout(() => setIsVisible(true), 50);
       return () => clearTimeout(timer);
     }
-  }, [currentIndex, items, isFinished]);
+  }, [currentIndex, items, phase]);
 
   const animateExit = useCallback(
     (dir: "left" | "right") => {
-      console.log("exit", dir);
       if (isExit) return;
       setIsExit(true);
       setExitDir(dir);
 
       const currentItem = items[currentIndex];
-      setResults((prev) => [...prev, { item: currentItem, choice: dir }]);
+      const updated = [...results, { item: currentItem, choice: dir }];
+      setResults(updated);
 
       setTimeout(() => {
         setIsExit(false);
         setExitDir(null);
         setIsVisible(false);
-        if (currentIndex >= totalWordsPerDay - 1) {
-          setIsFinished(true);
+        if (currentIndex >= items.length - 1) {
+          justFinishedRef.current = true;
+          setDisplayResults(updated);
+          setPhase("finished");
         } else {
           setCurrentIndex((prev) => prev + 1);
         }
       }, 300);
     },
-    [currentIndex, isExit, items, setResults],
+    [currentIndex, isExit, items, results],
   );
 
   const vote = useCallback(
     (dir: "left" | "right") => {
-      if (isExit || isFinished) return;
+      if (isExit || phase !== "playing") return;
       animateExit(dir);
     },
-    [animateExit, isExit, isFinished],
+    [animateExit, isExit, phase],
   );
 
   useEffect(() => {
@@ -119,7 +153,7 @@ export default function GameContainer() {
   }, [vote]);
 
   useEffect(() => {
-    if (cardRef.current && !isExit) {
+    if (cardRef.current && !isExit && phase === "playing") {
       let mc: HammerManager;
 
       import("hammerjs").then((Hammer) => {
@@ -171,17 +205,26 @@ export default function GameContainer() {
         }
       };
     }
-  }, [animateExit, isExit]);
+  }, [animateExit, isExit, phase]);
 
-  if (isFinished) {
+  if (phase === "loading") {
+    return <div className="game-wrapper" />;
+  }
+
+  if (phase === "finished") {
     return (
       <div className="game-wrapper">
         <header>
           <h1 className="font-black text-2xl">Résultats</h1>
+          {!isToday && (
+            <div className="pt-1 font-bold text-gray-500 text-sm">
+              {formatDayLabel(dayKey)}
+            </div>
+          )}
         </header>
         <div className="results-container">
           <ul className="space-y-4">
-            {results.map((result, index) => {
+            {displayResults.map((result, index) => {
               const itemScores = scores[result.item] || { left: 0, right: 0 };
               const totalVotes = itemScores.left + itemScores.right;
               const leftPercentage =
@@ -245,13 +288,21 @@ export default function GameContainer() {
             })}
           </ul>
         </div>
-        <div className="controls">
-          <button
-            onClick={() => window.location.reload()}
-            className="btn-left btn"
-          >
-            <i className="fa-arrow-rotate-left fa-solid"></i>
-          </button>
+        <div className="flex-col gap-2 controls">
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/result?date=${dayKey}`}
+              className="inline-block flex items-center bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg h-10 font-bold text-gray-600 text-sm"
+            >
+              Voir les scores du jour
+            </Link>
+            <Link
+              href="/calendrier"
+              className="inline-block flex items-center bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg h-10 font-bold text-gray-600 text-sm"
+            >
+              Rattraper d&apos;autres jours
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -265,13 +316,18 @@ export default function GameContainer() {
           {translations[lang].or as TranslationKeys}{" "}
           <span className="d-txt">{translations[lang].right}</span> ?
         </h1>
+        {!isToday && (
+          <div className="pt-1 font-bold text-gray-500 text-xs">
+            Rattrapage du {formatDayLabel(dayKey)}
+          </div>
+        )}
         <div id="counter" className="pb-4 font-bold text-gray-500">
-          {currentIndex + 1} / {totalWordsPerDay}
+          {currentIndex + 1} / {items.length}
         </div>
       </header>
       <div id="app-container">
         <div className="card-container">
-          {items.length > 0 && (
+          {currentIndex < items.length && (
             <div
               ref={cardRef}
               className={`card card-game ${isVisible ? "visible" : ""} ${
@@ -315,12 +371,6 @@ export default function GameContainer() {
           ici.
         </p>
         <div className="flex items-center gap-4">
-          <Link
-            href="/result"
-            className="inline-block flex items-center bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg h-10 font-bold text-gray-600 text-sm"
-          >
-            Voir les scores du jour
-          </Link>
           <a href="https://www.buymeacoffee.com/m_platypus" target="_blank">
             <img
               src="https://cdn.buymeacoffee.com/buttons/v2/default-red.png"
