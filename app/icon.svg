@@ -1,0 +1,24 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="0,0 512,0 0,512" fill="#e63946" />
+  <polygon points="512,0 512,512 0,512" fill="#1d3557" />
+  <text
+    x="163"
+    y="200"
+    font-family="Montserrat, Arial, sans-serif"
+    font-weight="900"
+    font-size="150"
+    fill="#ffffff"
+    text-anchor="middle"
+    dominant-baseline="central"
+  >G</text>
+  <text
+    x="349"
+    y="349"
+    font-family="Montserrat, Arial, sans-serif"
+    font-weight="900"
+    font-size="150"
+    fill="#ffffff"
+    text-anchor="middle"
+    dominant-baseline="central"
+  >D</text>
+</svg>
