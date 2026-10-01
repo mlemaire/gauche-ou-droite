@@ -131,13 +131,13 @@ function ResultContent() {
                       className="bg-[var(--left-color)] flex justify-center items-center"
                       style={{ width: `${leftPercentage}%` }}
                     >
-                      {leftPercentage}%
+                      {itemScores.left}
                     </div>
                     <div
                       className="bg-[var(--right-color)] flex justify-center items-center"
                       style={{ width: `${rightPercentage}%` }}
                     >
-                      {rightPercentage}%
+                      {itemScores.right}
                     </div>
                   </div>
                 </div>

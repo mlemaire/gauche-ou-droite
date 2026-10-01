@@ -240,10 +240,7 @@ export default function GameContainer() {
               const userChoiceText = translations[lang][result.choice];
               const majorityChoice: "left" | "right" =
                 leftPercentage > rightPercentage ? "left" : "right";
-              const majorityPercentage = Math.max(
-                leftPercentage,
-                rightPercentage,
-              );
+              const majorityCount = itemScores[majorityChoice];
               const majorityChoiceText = translations[lang][majorityChoice];
 
               return (
@@ -268,22 +265,23 @@ export default function GameContainer() {
                           majorityChoice === "left" ? "g-txt" : "d-txt"
                         }`}
                       >
-                        {majorityPercentage}%
+                        {majorityCount}
                       </span>{" "}
-                      des gens ont voté {majorityChoiceText}.
+                      {majorityCount > 1 ? "personnes ont" : "personne a"} voté{" "}
+                      {majorityChoiceText}.
                     </p>
                     <div className="flex bg-gray-200 rounded-full h-8 overflow-hidden font-bold text-white text-sm">
                       <div
                         className="bg-[var(--left-color)] flex justify-center items-center"
                         style={{ width: `${leftPercentage}%` }}
                       >
-                        {leftPercentage}%
+                        {itemScores.left}
                       </div>
                       <div
                         className="bg-[var(--right-color)] flex justify-center items-center"
                         style={{ width: `${rightPercentage}%` }}
                       >
-                        {rightPercentage}%
+                        {itemScores.right}
                       </div>
                     </div>
                   </div>
